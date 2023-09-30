@@ -1,0 +1,118 @@
+---
+title: "DATA_607 PROJECT 1"
+author: "Souleymane Doumbia, Group Member: Fomba Kassoh"
+date: "2023-09-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r }
+
+library(tidyverse)
+# Read the text file into a character vector
+text_lines <- read_lines("https://raw.githubusercontent.com/Doumgit/Project_1_D607/main/tournamentinfo.txt")
+text_lines <- tail(text_lines, -4)
+
+```
+
+
+
+```{r  }
+# Initialize an empty list to store pairs of lines
+my_list <- list()
+
+# Create an empty data frame. Data will be added to this data frame later
+df <- data.frame(player_no = character(0), name = character(0), state = character(0), score = character(0), current_rating = character(0), next_round_rating = character(0), pair_ids = list())
+
+pairs_df <- data.frame(player_no = character(0),  pair_ids = list())
+# Loop through the text_lines vector three lines at a time
+for (i in seq(1, length(text_lines), by = 3)){
+ 
+ 
+# Save the first two lines as input strings. Ignore the third line with the dashes
+input_string1 <- text_lines[i]
+input_string2 <- text_lines[i + 1]
+
+
+# Define regular expressions to extract the information
+player_no <- str_extract(input_string1, r"((?<=\s{3})(\d+)(?=\s\|))")
+player_name <- str_extract(input_string1, r"((?<=\|\s)(\b[A-Z,\-,\s]+\b)(?=\s+\|\d+\.\d+\s+\|))") 
+state <- str_extract(input_string2, r"((\b[A-Z]{2}\b))") 
+rating <- str_extract(input_string1, r"((\b\d*\.\d*\b))") 
+current_rating <- str_extract(input_string2, r"((?<=R:\s{0,5})\d{3,4})")
+next_round_rating <- str_extract(input_string2, r"((?<=->\s{0,5})\d+)")
+pair_ids <- unlist(str_extract_all(input_string1, "(?<=[A-Z]\\s{1,4})(\\d*)(?=\\|)"))
+  
+# Add rows one at a time
+new_row <- c(id = player_no, name = player_name, state = state, total_pts = rating, pre_rtg = current_rating, post_rtg = next_round_rating, pair_ids)
+df <- rbind(df, new_row)
+
+
+
+id <- player_no
+pair_ids <- pair_ids
+temp_pairs_df <- data.frame(id, pair_ids)
+pairs_df <- rbind(pairs_df, temp_pairs_df)
+}
+
+
+names(df) <- c("id", "name", "state", "total_pts", "pre_rtg", "post_rtg", "pair_1", "pair_2", "pair_3", "pair_4", "pair_5", "pair_6", "pair_7")
+```
+
+*For Loop to determine Average rating*
+```{r}
+for(i in seq(1:length(df$id))){
+  for(j in seq(1:length(df$id))){
+    if(df$pair_1[i] == df$id[j]){
+      df$pair_1[i] = as.numeric(df$pre_rtg[j])
+    }
+    if(df$pair_2[i] == df$id[j]){
+      df$pair_2[i] = as.numeric(df$pre_rtg[j])
+    }
+    if(df$pair_3[i] == df$id[j]){
+      df$pair_3[i] = as.numeric(df$pre_rtg[j])
+    }
+    if(df$pair_4[i] == df$id[j]){
+      df$pair_4[i] =as.numeric(df$pre_rtg[j])
+    }
+    if(df$pair_5[i] == df$id[j]){
+      df$pair_5[i] = as.numeric(df$pre_rtg[j])
+    }
+    if(df$pair_6[i] == df$id[j]){
+      df$pair_6[i] = as.numeric(df$pre_rtg[j])
+    }
+    if(df$pair_7[i] == df$id[j]){
+      df$pair_7[i] = as.numeric(df$pre_rtg[j])
+    }
+    
+  }
+}
+
+glimpse(df)
+```
+
+*New data: Calculating the mean*
+This code determines the average pre rating of each player
+```{r calculating mean}
+v = c()
+r = c()
+for(k in seq(1:length(df$id))){
+  u = as.integer(c(df$pair_1[k],df$pair_2[k],df$pair_3[k],df$pair_4[k],df$pair_5[k],df$pair_6[k],df$pair_7[k]))
+  
+  r[k] = append(v,mean(u, na.rm = TRUE))
+}
+df <- df %>%
+  mutate(Average = as.integer(r))
+
+New_data <- df %>%
+  select(name, state, total_pts, pre_rtg, Average)
+
+New_data
+write_csv(New_data, "Project1.csv")
+```
+
